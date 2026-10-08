@@ -54,6 +54,11 @@
       </div>
       <div class="wbody">
         <p class="note">Everything is synthesized live in your browser. No recordings, no downloads.</p>
+        <div class="chan master-chan">
+          <label for="v-master"><span aria-hidden="true">🔊</span> Master volume</label>
+          <input id="v-master" type="range" min="0" max="150" step="1" value="100">
+          <output for="v-master" id="o-master">100%</output>
+        </div>
         <div class="mixer">
           <div class="chan">
             <label for="v-rain"><span aria-hidden="true">🌧️</span> Rain</label>
@@ -138,10 +143,10 @@
       <div class="wbody prose">
         <p><strong>Insomnia OS 4.0 AM Edition</strong>, built for Hasan, who texted "I can't sleep… make me something interesting".</p>
         <ul>
-          <li><span aria-hidden="true">🌧️</span> <strong>Soundscape.exe</strong>: four live-synthesized sounds with their own volume.</li>
+          <li><span aria-hidden="true">🌧️</span> <strong>Soundscape.exe</strong>: four live-synthesized sounds with their own volume, plus a master volume up to 150%.</li>
           <li><span aria-hidden="true">🐑</span> <strong>Sheep.exe</strong>: the oldest sleep algorithm, now with sound.</li>
           <li><span aria-hidden="true">📝</span> <strong>4am Thoughts.txt</strong>: local-first. Your words live in this browser, nowhere else.</li>
-          <li><span aria-hidden="true">✨</span> <strong>Starfield.scr</strong>: press any key to wake.</li>
+          <li><span aria-hidden="true">✨</span> <strong>Starfield.scr</strong>: tap, double tap or press any key to wake.</li>
         </ul>
         <h3>Keyboard</h3>
         <ul>
@@ -187,10 +192,10 @@
 </div>
 
 <!-- Starfield -->
-<div id="stars" class="stars" role="dialog" aria-modal="true" aria-label="Starfield screensaver. Press any key or click to exit." tabindex="-1" hidden>
+<button id="stars" class="stars" type="button" aria-label="Close screensaver. Double tap or press any key to wake." hidden>
   <canvas id="stars-canvas" aria-hidden="true"></canvas>
-  <p class="stars-hint">✨ press any key or tap to wake ✨</p>
-</div>
+  <span class="stars-hint" aria-hidden="true">✨ Tap or press any key to wake ✨</span>
+</button>
 
 <!-- Goodnight -->
 <section id="night" class="night" aria-labelledby="night-t" tabindex="-1" hidden>
