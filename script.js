@@ -1,4 +1,4 @@
-/* Insomnia OS — made by Tab for Hasan at 4 AM. MIT licensed. */
+/* Insomnia OS — made by Tab at 4 AM. MIT licensed. */
 (() => {
 "use strict";
 const $ = (s, r = document) => r.querySelector(s);
@@ -16,13 +16,46 @@ function announce(msg) {
   annTimer = setTimeout(() => { announcer.textContent = msg; }, 60);
 }
 
+/* ================= Your name (optional, local only, always set via textContent) ================= */
+const NAME_MAX = 40;
+const cleanName = s => String(s || "").replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, NAME_MAX);
+let userName = cleanName(store.get("name", ""));
+const named = (withName, without) => userName ? withName.replace("{name}", userName) : without;
+function renderName() {
+  $("#night-name").textContent = named("Goodnight, {name}", "Goodnight, friend");
+  const greet = $("#boot-greet");
+  greet.textContent = userName ? "Welcome back, " + userName + "." : "";
+  greet.hidden = !userName || !$("#name-boot").hidden;
+  $("#name-about-in").value = userName;
+  $("#name-about-status").textContent = userName ? "Saved as " + userName + "." : "No name saved. Insomnia OS will say friend.";
+}
+function setName(v) { userName = cleanName(v); store.set("name", userName); store.set("name-asked", true); renderName(); }
+const nameBoot = $("#name-boot");
+if (!store.get("name-asked", false)) nameBoot.hidden = false;
+nameBoot.addEventListener("submit", e => {
+  e.preventDefault(); setName($("#name-boot-in").value); nameBoot.hidden = true; renderName();
+  announce(userName ? "Nice to meet you, " + userName + ". Press to boot when you're ready." : "No name saved. Press to boot when you're ready.");
+  $("#boot-btn").focus();
+});
+$(".name-skip", nameBoot).addEventListener("click", () => {
+  store.set("name-asked", true); nameBoot.hidden = true; renderName();
+  announce("Skipped. You can add a name later in Read Me.txt."); $("#boot-btn").focus();
+});
+$("#name-about").addEventListener("submit", e => {
+  e.preventDefault(); setName($("#name-about-in").value);
+  announce(userName ? "Name saved. I'll call you " + userName + "." : "Name cleared.");
+});
+$(".name-clear", $("#name-about")).addEventListener("click", () => { setName(""); announce("Name cleared. I'll just say friend."); $("#name-about-in").focus(); });
+renderName();
+
 /* ================= Audio engine (all synthesized, nothing before a gesture) ================= */
 const A = {
+  LIM: { th: -6, knee: 6, ratio: 4, makeup: 0.9 }, // compressor settings (v2 was a -3 dB brickwall only)
   ctx: null, master: null, vol: null, sfx: null, amb: null, ch: {}, levels: {rain:0, fan:0, whir:0, crick:0},
   muted: store.get("muted", false), clicks: true,
   volume: Math.min(150, Math.max(0, +store.get("volume", 100) || 0)), // master volume, 0–150 %
-  AMB: 1.55, // ambience bus boost (was 1): about +3.8 dB, a bit louder, not blasting
-  SFX: 0.72, // chime bus (was 0.5): about +3.2 dB
+  AMB: 2.2, // ambience bus (v1: 1, v2: 1.55): another +3 dB, the limiter keeps it clean
+  SFX: 1.02, // chime bus (v1: 0.5, v2: 0.72): another +3 dB
   volGain(pct) { return Math.pow(pct/100, 1.5); }, // perceptual curve; 150% ≈ +5 dB
   init() {
     if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume(); return; }
@@ -32,10 +65,14 @@ const A = {
     // sources -> amb / sfx -> master (mute) -> vol (master volume) -> limiter -> ceiling -> speakers
     this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : 1;
     this.vol = c.createGain(); this.vol.gain.value = this.volGain(this.volume);
-    const lim = c.createDynamicsCompressor(); // brickwall-style limiter so nothing ever clips
-    lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.12;
-    const ceil = c.createGain(); ceil.gain.value = 0.84; // -1.5 dB headroom after the limiter
-    this.master.connect(this.vol).connect(lim).connect(ceil).connect(c.destination);
+    const lim = c.createDynamicsCompressor(); // gentle glue compressor + limiter, so louder still sounds clean
+    lim.threshold.value = this.LIM.th; lim.knee.value = this.LIM.knee; lim.ratio.value = this.LIM.ratio; lim.attack.value = 0.01; lim.release.value = 0.25;
+    const ceil = c.createGain(); ceil.gain.value = this.LIM.makeup; // make-up gain after the compressor
+    // Safety soft-clipper: transparent below 0.6, rounds off anything above, hard ceiling at about -1.2 dBFS. Nothing can clip.
+    const safe = c.createWaveShaper(), n = 2049, curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1, ax = Math.abs(x); curve[i] = ax <= 0.6 ? x : Math.sign(x) * (0.6 + 0.33 * Math.tanh((ax - 0.6) / 0.33)); }
+    safe.curve = curve; safe.oversample = "4x";
+    this.master.connect(this.vol).connect(lim).connect(ceil).connect(safe).connect(c.destination);
     this.sfx = c.createGain(); this.sfx.gain.value = this.SFX; this.sfx.connect(this.master);
     this.amb = c.createGain(); this.amb.gain.value = this.AMB; this.amb.connect(this.master);
     this.white = this.noiseBuffer("white"); this.brown = this.noiseBuffer("brown"); this.pink = this.noiseBuffer("pink");
@@ -183,16 +220,18 @@ const A = {
 const bootBtn = $("#boot-btn"), bootLog = $("#boot-log");
 const lines = ["Insomnia BIOS v4.00 AM", "Checking melatonin........ NOT FOUND", "Counting sheep drivers..... OK", "Mounting /dev/rain......... OK", "Loading cozy.sys........... OK", "Starting desktop…"];
 bootBtn.addEventListener("click", async () => {
+  if (!nameBoot.hidden) { const typed = cleanName($("#name-boot-in").value); if (typed) setName(typed); else store.set("name-asked", true); nameBoot.hidden = true; renderName(); }
   A.init(); A.play("boot");
   bootBtn.disabled = true; bootBtn.textContent = "Booting…";
   announce("Booting Insomnia OS.");
   if (!reduceMotion()) {
-    for (const l of lines) { bootLog.textContent += l + "\n"; await new Promise(r => setTimeout(r, 330)); }
+    const log = lines.slice(); log.splice(4, 0, userName ? "Loading profile............ " + userName.toUpperCase() : "Loading profile............ GUEST");
+    for (const l of log) { bootLog.textContent += l + "\n"; await new Promise(r => setTimeout(r, 330)); }
     await new Promise(r => setTimeout(r, 300));
   }
   $("#boot").hidden = true; $("#os").hidden = false;
   icons[0].focus();
-  announce("Insomnia OS is ready. " + icons.length + " icons on the desktop. Use arrow keys to move between them, Enter to open.");
+  announce(named("Hi {name}. ", "") + "Insomnia OS is ready. " + icons.length + " icons on the desktop. Use arrow keys to move between them, Enter to open.");
 });
 
 /* ================= Desktop icons (roving tabindex) ================= */
@@ -333,24 +372,50 @@ document.addEventListener("click", e => {
 /* ================= Sheep.exe ================= */
 let sheep = store.get("sheep", 0);
 const sheepCount = $("#sheep-count"), sheepMsg = $("#sheep-msg"), sprite = $("#sheep-sprite");
-const quips = [
-  "Sheep #{n} cleared the fence with style.", "Sheep #{n} paused to ask if you've tried drinking water.", "Sheep #{n} tripped, got up, pretended nothing happened.",
-  "Sheep #{n} is wearing tiny noise-cancelling headphones.", "Sheep #{n} filed an accessibility bug: the fence has no ramp. Fixed. 🛠️",
-  "Sheep #{n} said 'baa' in a classic system voice.", "Sheep #{n} jumped, then synced locally. No cloud needed.", "Sheep #{n} brought a warm glass of milk for you. 🥛",
-  "Sheep #{n} did a little spin. Showing off.", "Sheep #{n} whispered 'you've got this'.", "Sheep #{n} hopped over in perfect silence (respecting the neighbours)."
+const sheepLog = $("#sheep-log"), sheepLive = [$("#sheep-live-a"), $("#sheep-live-b")];
+const LOG_MAX = 6;
+const phrases = [
+  "jumped the fence", "cleared it with style", "tiptoed over the fence", "hopped over in perfect silence",
+  "did a little spin mid-air. Showing off", "tripped, got up, pretended nothing happened", "said baa in a classic system voice",
+  "jumped wearing tiny noise-cancelling headphones", "brought you a warm glass of milk", "found the new ramp and rolled over",
+  "jumped, then synced locally. No cloud needed", "floated over like a little cloud", "whispered you've got this{name}"
 ];
-const milestones = { 1:"The first sheep. A historic moment. 🐑", 10:"10 sheep! The flock is warming up.", 25:"25 sheep. Your eyelids feel… slightly heavier?", 50:"50 sheep! The sheep union has requested snacks. 🥕", 100:"💯 sheep! Achievement unlocked: Shepherd of the Night.", 200:"200 sheep. At this point they're counting you.", 404:"Sheep #404 not found. It went to sleep. You could too. 😴", 500:"500 sheep. Okay, legend. Bed. Now. 🛌" };
+const milestones = { 1:"The first sheep. A historic moment.", 10:"10 sheep! The flock is warming up.", 25:"25 sheep. Your eyelids feel slightly heavier?", 50:"50 sheep! The sheep union has requested snacks.", 100:"100 sheep! Achievement unlocked: Shepherd of the Night.", 200:"200 sheep. At this point they're counting you.", 404:"Sheep 404 not found. It went to sleep. You could too.", 500:"500 sheep. Okay, legend. Bed. Now." };
+const tens = ["{n} sheep! The flock keeps growing.", "{n} sheep. Slow breath in, slow breath out.", "{n} sheep and counting. The fence is getting sleepy too.", "{n} sheep! Nice rhythm.", "{n} sheep. The moon says hi."];
+let lastPhrase = -1, liveTurn = 0;
+function sheepLine(n) {
+  let i; do { i = Math.floor(Math.random() * phrases.length); } while (i === lastPhrase && phrases.length > 1);
+  lastPhrase = i;
+  const num = n.toLocaleString();
+  let line = "Sheep " + num + " " + phrases[i].replace("{name}", userName ? ", " + userName : "") + ".";
+  const m = milestones[n] || (n % 10 === 0 ? tens[(n / 10) % tens.length].replace("{n}", num) : "");
+  return { line, milestone: m };
+}
+function sheepAnnounce(text) {
+  // Two polite regions, used in turn: the new text always lands in a freshly emptied region, so every count is read.
+  const next = sheepLive[liveTurn % 2], other = sheepLive[(liveTurn + 1) % 2]; liveTurn++;
+  other.textContent = ""; next.textContent = "";
+  setTimeout(() => { next.textContent = text; }, 30);
+}
 function renderSheep() { sheepCount.textContent = sheep.toLocaleString(); }
 renderSheep();
 $("#sheep-btn").addEventListener("click", () => {
   A.init(); sheep++; store.set("sheep", sheep); renderSheep(); A.play("baa");
-  const msg = milestones[sheep] || quips[Math.floor(Math.random()*quips.length)].replace("{n}", sheep.toLocaleString());
-  sheepMsg.textContent = msg;
-  announce(milestones[sheep] ? msg : "Sheep " + sheep.toLocaleString() + ".");
+  const { line, milestone } = sheepLine(sheep);
+  const li = document.createElement("li");
+  const main = document.createElement("span"); main.textContent = line;
+  const icon = document.createElement("span"); icon.setAttribute("aria-hidden", "true"); icon.textContent = milestone ? " 🎉" : " 🐑";
+  li.append(main, icon);
+  if (milestone) { const ms = document.createElement("strong"); ms.className = "milestone"; ms.textContent = " " + milestone; li.append(ms); li.classList.add("is-milestone"); }
+  sheepLog.prepend(li);
+  while (sheepLog.children.length > LOG_MAX) sheepLog.lastElementChild.remove();
+  sheepMsg.hidden = true;
+  sheepAnnounce(line + (milestone ? " " + milestone : ""));
   if (!reduceMotion()) { sprite.classList.remove("jump"); void sprite.offsetWidth; sprite.classList.add("jump"); }
 });
 $("#sheep-reset").addEventListener("click", () => {
-  sheep = 0; store.set("sheep", 0); renderSheep(); sheepMsg.textContent = "The flock has been released back into the wild. Counter at zero.";
+  sheep = 0; store.set("sheep", 0); renderSheep(); sheepLog.textContent = ""; sheepMsg.hidden = false;
+  sheepMsg.textContent = "The flock has been released back into the wild. Counter at zero.";
   announce("Sheep counter reset to zero.");
 });
 
@@ -444,7 +509,7 @@ $("#sd-yes").addEventListener("click", () => {
   else nightSound.textContent = "";
   setTimeout(() => { $("#os").hidden = true; }, reduceMotion() ? 0 : 1200);
   night.focus();
-  announce("Goodnight, Hasan. It's now safe to turn off your brain.");
+  announce(named("Goodnight, {name}.", "Goodnight.") + " It's now safe to turn off your brain.");
 });
 $("#reboot").addEventListener("click", () => {
   night.classList.remove("show"); night.hidden = true; $("#os").hidden = false;
