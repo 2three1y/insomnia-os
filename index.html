@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Insomnia OS · made by Tab for Hasan at 4 AM · MIT -->
+<!-- Insomnia OS · made by Tab at 4 AM · MIT -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -7,7 +7,7 @@
 <title>Insomnia OS 🌙 — a cozy desktop for 4 AM</title>
 <meta name="description" content="A retro desktop for when you can't sleep: a live-synthesized sleep soundscape mixer, Sheep.exe, a local-first 4am notepad, a starfield screensaver, and a gentle Shut Down. Fully keyboard and screen-reader friendly.">
 <meta property="og:title" content="Insomnia OS 🌙">
-<meta property="og:description" content="A cozy retro desktop for 4 AM. Rain, fan hum, old computer whir and crickets, synthesized live. Made by Tab for Hasan.">
+<meta property="og:description" content="A cozy retro desktop for 4 AM. Rain, fan hum, old computer whir and crickets, synthesized live. Made by Tab at 4 AM.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#14123a">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌙</text></svg>">
@@ -26,6 +26,16 @@
     <h1 id="boot-title">Insomnia OS <span class="ver">4.0 AM Edition</span></h1>
     <p class="boot-sub">A cozy desktop for when sleep is not answering its texts.</p>
     <div id="boot-log" class="boot-log" aria-hidden="true"></div>
+    <form id="name-boot" class="name-form" hidden>
+      <label for="name-boot-in">What should I call you? <span class="opt">(optional)</span></label>
+      <div class="row">
+        <input id="name-boot-in" class="name-in" type="text" maxlength="40" autocomplete="given-name" spellcheck="false" aria-describedby="name-boot-hint">
+        <button class="btn" type="submit">Save</button>
+        <button class="btn name-skip" type="button">Skip</button>
+      </div>
+      <p id="name-boot-hint" class="boot-hint">Stays in this browser only. Change or clear it later in Read Me.txt.</p>
+    </form>
+    <p id="boot-greet" class="boot-greet" hidden></p>
     <button id="boot-btn" class="btn btn-big" type="button">Press to boot 🔊</button>
     <p class="boot-hint">Sound starts only after you press. You can mute any time from the taskbar.</p>
   </div>
@@ -106,6 +116,10 @@
         </div>
         <p class="count-line">Sheep counted: <strong id="sheep-count">0</strong></p>
         <p id="sheep-msg" class="sheep-msg">The flock is assembling. Press the button.</p>
+        <h3 id="sheep-log-h" class="sr-only">Recent sheep, newest first</h3>
+        <ul id="sheep-log" class="sheep-log" aria-labelledby="sheep-log-h"></ul>
+        <div class="sr-only" aria-live="polite" aria-atomic="true" id="sheep-live-a"></div>
+        <div class="sr-only" aria-live="polite" aria-atomic="true" id="sheep-live-b"></div>
         <div class="row">
           <button id="sheep-btn" class="btn btn-big" type="button">Count a sheep 🐑</button>
           <button id="sheep-reset" class="btn" type="button">Release the flock</button>
@@ -141,7 +155,17 @@
         <button class="wclose" type="button" aria-label="Close Read Me">✕</button>
       </div>
       <div class="wbody prose">
-        <p><strong>Insomnia OS 4.0 AM Edition</strong>, built for Hasan, who texted "I can't sleep… make me something interesting".</p>
+        <p><strong>Insomnia OS 4.0 AM Edition</strong>, built at 4 AM for anyone whose brain won't switch off.</p>
+        <h3 id="name-h">Your name</h3>
+        <form id="name-about" class="name-form" aria-labelledby="name-h">
+          <label for="name-about-in">What should I call you? <span class="opt">(optional)</span></label>
+          <div class="row">
+            <input id="name-about-in" class="name-in" type="text" maxlength="40" autocomplete="given-name" spellcheck="false">
+            <button class="btn" type="submit">Save</button>
+            <button class="btn name-clear" type="button">Clear name</button>
+          </div>
+          <p id="name-about-status" class="small"></p>
+        </form>
         <ul>
           <li><span aria-hidden="true">🌧️</span> <strong>Soundscape.exe</strong>: four live-synthesized sounds with their own volume, plus a master volume up to 150%.</li>
           <li><span aria-hidden="true">🐑</span> <strong>Sheep.exe</strong>: the oldest sleep algorithm, now with sound.</li>
@@ -179,7 +203,7 @@
 
   <!-- Taskbar -->
   <footer class="foot">
-  <p class="credit">Made by Tab for Hasan at 4 AM <span aria-hidden="true">🌙</span></p>
+  <p class="credit">Made by Tab at 4 AM <span aria-hidden="true">🌙</span></p>
   <div class="taskbar">
     <span class="start" aria-hidden="true">🌙 Insomnia</span>
     <nav class="tasks" aria-label="Open windows"><ul id="task-list"></ul></nav>
@@ -200,11 +224,11 @@
 <!-- Goodnight -->
 <section id="night" class="night" aria-labelledby="night-t" tabindex="-1" hidden>
   <div>
-    <h2 id="night-t">Goodnight, Hasan <span aria-hidden="true">🌙</span></h2>
+    <h2 id="night-t"><span id="night-name">Goodnight, friend</span> <span aria-hidden="true">🌙</span></h2>
     <p>It's now safe to turn off your brain.</p>
     <p id="night-sound" class="small"></p>
     <button id="reboot" class="btn" type="button">Restart Insomnia OS</button>
-    <p class="credit">Made by Tab for Hasan at 4 AM</p>
+    <p class="credit">Made by Tab at 4 AM</p>
   </div>
 </section>
 
