@@ -195,12 +195,12 @@ const A = {
       case "open": this.tone(660, t, 0.09, {type:"triangle", vol:0.14}); this.tone(990, t+0.06, 0.12, {type:"triangle", vol:0.12}); break;
       case "close": this.tone(880, t, 0.08, {type:"triangle", vol:0.12}); this.tone(587, t+0.05, 0.12, {type:"triangle", vol:0.1}); break;
       case "ding": this.tone(1318, t, 0.6, {vol:0.18}); this.tone(1976, t, 0.4, {vol:0.06}); break;
-      case "boot": // warm major-seventh bloom, Db - Ab - C - F
-        [[277.2,0],[415.3,.18],[523.3,.36],[698.5,.54],[1046.5,.78]].forEach(([f,d]) => { this.tone(f, t+d, 2.6-d, {vol:0.13, attack:0.04}); this.tone(f*2.001, t+d, 1.4, {vol:0.025, attack:0.04}); });
-        this.tone(138.6, t, 3, {type:"triangle", vol:0.09, attack:0.3}); break;
-      case "goodnight":
-        [[784,0],[659.3,.35],[523.3,.7],[392,1.05],[261.6,1.5]].forEach(([f,d]) => this.tone(f, t+d, 2.4, {vol:0.12, attack:0.03}));
-        this.tone(130.8, t+1.5, 3.5, {type:"triangle", vol:0.08, attack:0.4}); break;
+      case "boot": // warm major-seventh bloom, Db - Ab - C - F. Round 4: louder (about +5 dB) and fuller, with an octave shimmer, a low fifth and a longer tail
+        [[277.2,0],[415.3,.18],[523.3,.36],[698.5,.54],[1046.5,.78]].forEach(([f,d]) => { this.tone(f, t+d, 3.2-d, {vol:0.2, attack:0.04}); this.tone(f*2.001, t+d, 1.8, {vol:0.04, attack:0.04}); });
+        this.tone(138.6, t, 3.6, {type:"triangle", vol:0.15, attack:0.3}); this.tone(207.7, t+0.1, 3.3, {vol:0.06, attack:0.35}); break;
+      case "goodnight": // Round 4: louder (about +5 dB) and fuller, each note doubled an octave up, a low fifth under the final C, longer sustain
+        [[784,0],[659.3,.35],[523.3,.7],[392,1.05],[261.6,1.5]].forEach(([f,d]) => { this.tone(f, t+d, 2.9, {vol:0.2, attack:0.03}); this.tone(f*2.001, t+d, 1.5, {vol:0.035, attack:0.03}); });
+        this.tone(130.8, t+1.5, 4, {type:"triangle", vol:0.14, attack:0.4}); this.tone(196, t+1.5, 3.6, {vol:0.06, attack:0.4}); break;
       case "baa": {
         const c = this.ctx, o = c.createOscillator(), vib = c.createOscillator(), vg = c.createGain(), f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter(), g = c.createGain();
         const base = 200 + Math.random()*90;
