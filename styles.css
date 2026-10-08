@@ -145,3 +145,21 @@ textarea{width:100%;font:15px/1.5 ui-monospace,"Courier New",monospace;color:#00
   .win,.btn,.taskbar,.icon{border:2px solid CanvasText}
   .win.active .titlebar{background:Highlight;color:HighlightText}
 }
+
+/* Optional name prompt */
+.name-form{margin:16px auto 6px;max-width:420px;text-align:left}
+.name-form label{display:block;font-weight:700;margin-bottom:6px}
+.name-form .opt{font-weight:400;opacity:.85}
+.name-form .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.name-in{flex:1 1 160px;min-height:44px;font:16px var(--font);color:#000;background:#fff;border:0;padding:8px 10px;
+  box-shadow:inset 2px 2px 0 var(--win-sh),inset -2px -2px 0 var(--win-hi)}
+.boot .name-form .boot-hint{margin-top:8px}
+.boot-greet{font-size:18px;margin:14px 0 6px;color:#fff}
+/* Sheep log: one fresh line per sheep, newest first */
+.sheep-log{list-style:none;margin:0 0 10px;padding:6px 8px;background:#fff;color:#000;
+  box-shadow:inset 2px 2px 0 var(--win-sh),inset -2px -2px 0 var(--win-hi);font-size:14px;line-height:1.45}
+.sheep-log:empty{display:none}
+.sheep-log li{padding:2px 0;border-bottom:1px dotted #999}
+.sheep-log li:last-child{border-bottom:0}
+.sheep-log li:first-child{font-weight:700}
+.sheep-log .milestone{display:block;color:#3b1f9e}
