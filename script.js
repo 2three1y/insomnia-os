@@ -395,16 +395,85 @@ const sheepCount = $("#sheep-count"), sheepMsg = $("#sheep-msg"), sprite = $("#s
 const sheepLog = $("#sheep-log"), sheepLive = [$("#sheep-live-a"), $("#sheep-live-b")];
 const LOG_MAX = 6;
 const phrases = [
-  "jumped the fence", "cleared it with style", "tiptoed over the fence", "hopped over in perfect silence",
-  "did a little spin mid-air. Showing off", "tripped, got up, pretended nothing happened", "said baa in a classic system voice",
-  "jumped wearing tiny noise-cancelling headphones", "brought you a warm glass of milk", "found the new ramp and rolled over",
-  "jumped, then synced locally. No cloud needed", "floated over like a little cloud", "whispered you've got this{name}"
+  "jumped the fence",
+  "cleared it with style",
+  "tiptoed over the fence",
+  "hopped over in perfect silence",
+  "did a little spin mid-air. Showing off",
+  "tripped, got up, pretended nothing happened",
+  "said baa in a classic system voice",
+  "jumped wearing tiny noise-cancelling headphones",
+  "brought you a warm glass of milk",
+  "found the new ramp and rolled over",
+  "jumped, then synced locally. No cloud needed",
+  "floated over like a little cloud",
+  "whispered you've got this{name}",
+  "started a group chat with the other sheep. It's on mute",
+  "stopped to stretch first. Safety",
+  "jumped in slow motion, very dramatic",
+  "wore pajamas for the occasion",
+  "yawned halfway over. Contagious",
+  "cleared the fence and took a bow",
+  "brought a tiny pillow, just in case",
+  "landed softly on a pile of laundry",
+  "paused to look at the moon, then jumped",
+  "hummed a lullaby on the way over",
+  "jumped and forgot why. Classic 3 AM",
+  "counted you back, to be fair",
+  "politely asked if you're sleepy yet",
+  "rebooted mid-jump. Back online",
+  "jumped over the fence and a small puddle",
+  "left a note: sleep well{name}",
+  "jumped in fuzzy slippers",
+  "cleared the fence on the second try. Growth",
+  "flopped over like a beanbag",
+  "brought snacks for the sheep union",
+  "did a quiet little moonwalk over",
+  "jumped and set an alarm for noon",
+  "wrapped itself in a blanket burrito, then rolled over",
+  "turned the brightness down for you",
+  "jumped over, then tucked in the fence",
+  "read the fence a bedtime story first",
+  "drifted over like it had nowhere to be",
+  "hopped over with a cup of chamomile",
+  "wanted to say the stars look nice tonight",
+  "jumped and whispered, almost there",
+  "practiced its jump all day for this",
+  "tiptoed so the crickets wouldn't wake",
+  "jumped over the fence and a sleeping cat",
+  "made it over and immediately napped",
+  "cleared the fence with zero lag",
+  "jumped in airplane mode",
+  "carried a tiny night light",
+  "jumped and did a small, sleepy wave",
+  "slid under the fence instead. Creative",
+  "jumped while softly saying goodnight",
+  "brought the fluffiest wool in the flock",
+  "hopped over and dimmed the stars a little",
+  "took the scenic route over",
+  "jumped, then closed 47 browser tabs",
+  "cleared it like a pro gymnast. 9.8",
+  "gave the fence a gentle high five",
+  "jumped over and fluffed your pillow",
+  "floated across on a dream",
+  "hopped over in a cozy sweater",
+  "jumped to the rhythm of the rain",
+  "jumped and said the night is on your side{name}"
 ];
 const milestones = { 1:"The first sheep. A historic moment.", 10:"10 sheep! The flock is warming up.", 25:"25 sheep. Your eyelids feel slightly heavier?", 50:"50 sheep! The sheep union has requested snacks.", 100:"100 sheep! Achievement unlocked: Shepherd of the Night.", 200:"200 sheep. At this point they're counting you.", 404:"Sheep 404 not found. It went to sleep. You could too.", 500:"500 sheep. Okay, legend. Bed. Now." };
-const tens = ["{n} sheep! The flock keeps growing.", "{n} sheep. Slow breath in, slow breath out.", "{n} sheep and counting. The fence is getting sleepy too.", "{n} sheep! Nice rhythm.", "{n} sheep. The moon says hi."];
-let lastPhrase = -1, liveTurn = 0;
+const tens = ["{n} sheep! The flock keeps growing.", "{n} sheep. Slow breath in, slow breath out.", "{n} sheep and counting. The fence is getting sleepy too.", "{n} sheep! Nice rhythm.", "{n} sheep. The moon says hi.", "{n} sheep. Your pillow is getting jealous.", "{n} sheep. The crickets are impressed.", "{n} sheep! A round number. The flock cheers quietly."];
+// Shuffle bag: every line is used once before any line comes back, and never the same line twice in a row.
+let bag = [], lastPhrase = -1, liveTurn = 0;
+function nextPhrase() {
+  if (!bag.length) {
+    bag = phrases.map((_, i) => i);
+    for (let k = bag.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [bag[k], bag[j]] = [bag[j], bag[k]]; }
+    if (bag.length > 1 && bag[bag.length - 1] === lastPhrase) { const j = Math.floor(Math.random() * (bag.length - 1)); [bag[bag.length - 1], bag[j]] = [bag[j], bag[bag.length - 1]]; }
+  }
+  return bag.pop();
+}
 function sheepLine(n) {
-  let i; do { i = Math.floor(Math.random() * phrases.length); } while (i === lastPhrase && phrases.length > 1);
+  const i = nextPhrase();
   lastPhrase = i;
   const num = n.toLocaleString();
   let line = "Sheep " + num + " " + phrases[i].replace("{name}", userName ? ", " + userName : "") + ".";
@@ -540,6 +609,7 @@ $("#reboot").addEventListener("click", () => {
 const clock = $("#clock");
 const tickClock = () => { clock.textContent = new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}); };
 tickClock(); setInterval(tickClock, 10000);
+window.__sheepPhrases = phrases.length;
 window.__psAudio = { state: () => A.ctx && A.ctx.state, scheduler: () => !!A.scheduler, idleNow: () => { A.lastUse = 0; A.sleepIfIdle(); } };
 document.addEventListener("visibilitychange", () => { if (document.hidden) A.sleepIfIdle(true); else if (A.ctx && A.ambActive()) A.wake(); });
 })();
