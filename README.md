@@ -5,7 +5,7 @@ A cozy retro desktop for 4 AM. Boot it up, mix a sleep soundscape, count some sh
 **Live:** https://insomnia-os.sites.tab.bot/
 
 ## What's inside
-- 🌧️ **Soundscape.exe**: rain, fan hum, old computer whir (with hard-drive chatter) and crickets, all synthesized live with the Web Audio API. No audio files. Each channel has its own labelled volume slider, plus presets.
+- 🌧️ **Soundscape.exe**: rain, fan hum, old computer whir (with hard-drive chatter) and crickets, all synthesized live with the Web Audio API. No audio files. Each channel has its own labelled volume slider, plus presets and a **Master volume** slider that goes up to 150% (remembered). A compressor and limiter sit before the speakers, so even 150% never clips.
 - 🐑 **Sheep.exe**: a sheep counter with a synthesized "baa", milestones, and a count that persists.
 - 📝 **4am Thoughts.txt**: a local-first notepad. Saved to `localStorage`, never leaves your device. Export as .txt.
 - ✨ **Starfield.scr**: classic warp starfield; static under reduced motion. Any key or tap wakes it.
