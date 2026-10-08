@@ -1,0 +1,208 @@
+<!doctype html>
+<!-- Insomnia OS · made by Tab for Hasan at 4 AM · MIT -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insomnia OS 🌙 — a cozy desktop for 4 AM</title>
+<meta name="description" content="A retro desktop for when you can't sleep: a live-synthesized sleep soundscape mixer, Sheep.exe, a local-first 4am notepad, a starfield screensaver, and a gentle Shut Down. Fully keyboard and screen-reader friendly.">
+<meta property="og:title" content="Insomnia OS 🌙">
+<meta property="og:description" content="A cozy retro desktop for 4 AM. Rain, fan hum, old computer whir and crickets, synthesized live. Made by Tab for Hasan.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#14123a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌙</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#desktop-icons">Skip to desktop</a>
+
+<!-- Screen reader announcements -->
+<div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ===== Boot screen ===== -->
+<section id="boot" class="boot" aria-labelledby="boot-title">
+  <div class="boot-inner">
+    <p class="boot-logo" aria-hidden="true">🌙</p>
+    <h1 id="boot-title">Insomnia OS <span class="ver">4.0 AM Edition</span></h1>
+    <p class="boot-sub">A cozy desktop for when sleep is not answering its texts.</p>
+    <div id="boot-log" class="boot-log" aria-hidden="true"></div>
+    <button id="boot-btn" class="btn btn-big" type="button">Press to boot 🔊</button>
+    <p class="boot-hint">Sound starts only after you press. You can mute any time from the taskbar.</p>
+  </div>
+</section>
+
+<!-- ===== Desktop ===== -->
+<div id="os" class="os" hidden>
+  <main id="desktop" class="desktop" aria-label="Insomnia OS desktop">
+    <h2 class="sr-only">Desktop</h2>
+    <p id="desk-help" class="sr-only">Desktop icons. Use arrow keys to move between icons and Enter to open. In a window, Escape closes it. The grip button on each title bar moves the window with arrow keys.</p>
+    <div id="desktop-icons" class="icons" role="toolbar" aria-label="Desktop icons" aria-describedby="desk-help" aria-orientation="vertical">
+      <button class="icon" type="button" data-open="win-sound"><span class="glyph" aria-hidden="true">🌧️</span><span class="label">Soundscape.exe</span></button>
+      <button class="icon" type="button" data-open="win-sheep" tabindex="-1"><span class="glyph" aria-hidden="true">🐑</span><span class="label">Sheep.exe</span></button>
+      <button class="icon" type="button" data-open="win-notes" tabindex="-1"><span class="glyph" aria-hidden="true">📝</span><span class="label">4am Thoughts.txt</span></button>
+      <button class="icon" type="button" data-action="stars" tabindex="-1"><span class="glyph" aria-hidden="true">✨</span><span class="label">Starfield.scr</span></button>
+      <button class="icon" type="button" data-open="win-about" tabindex="-1"><span class="glyph" aria-hidden="true">💾</span><span class="label">Read Me.txt</span></button>
+      <button class="icon" type="button" data-open="win-shutdown" tabindex="-1"><span class="glyph" aria-hidden="true">🛌</span><span class="label">Shut Down…</span></button>
+    </div>
+
+    <!-- Soundscape -->
+    <section id="win-sound" class="win" role="dialog" aria-modal="false" aria-labelledby="win-sound-t" hidden data-x="140" data-y="40">
+      <div class="titlebar">
+        <button class="wmove" type="button" aria-label="Move Soundscape mixer window with arrow keys"><span aria-hidden="true">⠿</span></button>
+        <h2 id="win-sound-t" class="wtitle"><span aria-hidden="true">🌧️</span> Soundscape.exe</h2>
+        <button class="wclose" type="button" aria-label="Close Soundscape">✕</button>
+      </div>
+      <div class="wbody">
+        <p class="note">Everything is synthesized live in your browser. No recordings, no downloads.</p>
+        <div class="mixer">
+          <div class="chan">
+            <label for="v-rain"><span aria-hidden="true">🌧️</span> Rain</label>
+            <input id="v-rain" type="range" min="0" max="100" step="1" value="0" data-ch="rain">
+            <output for="v-rain" id="o-rain">0%</output>
+          </div>
+          <div class="chan">
+            <label for="v-fan"><span aria-hidden="true">🌀</span> Fan hum</label>
+            <input id="v-fan" type="range" min="0" max="100" step="1" value="0" data-ch="fan">
+            <output for="v-fan" id="o-fan">0%</output>
+          </div>
+          <div class="chan">
+            <label for="v-whir"><span aria-hidden="true">🖥️</span> Old computer whir</label>
+            <input id="v-whir" type="range" min="0" max="100" step="1" value="0" data-ch="whir">
+            <output for="v-whir" id="o-whir">0%</output>
+          </div>
+          <div class="chan">
+            <label for="v-crick"><span aria-hidden="true">🦗</span> Crickets</label>
+            <input id="v-crick" type="range" min="0" max="100" step="1" value="0" data-ch="crick">
+            <output for="v-crick" id="o-crick">0%</output>
+          </div>
+        </div>
+        <fieldset class="presets">
+          <legend>Presets</legend>
+          <button class="btn" type="button" data-preset="storm">⛈️ Rainy server room</button>
+          <button class="btn" type="button" data-preset="summer">🌾 Summer porch</button>
+          <button class="btn" type="button" data-preset="lab">🧪 Looscid lab, 3 AM</button>
+          <button class="btn" type="button" data-preset="off">🔇 All off</button>
+        </fieldset>
+      </div>
+    </section>
+
+    <!-- Sheep -->
+    <section id="win-sheep" class="win" role="dialog" aria-modal="false" aria-labelledby="win-sheep-t" hidden data-x="420" data-y="90">
+      <div class="titlebar">
+        <button class="wmove" type="button" aria-label="Move Sheep.exe window with arrow keys"><span aria-hidden="true">⠿</span></button>
+        <h2 id="win-sheep-t" class="wtitle"><span aria-hidden="true">🐑</span> Sheep.exe</h2>
+        <button class="wclose" type="button" aria-label="Close Sheep.exe">✕</button>
+      </div>
+      <div class="wbody">
+        <div class="pasture" aria-hidden="true">
+          <span class="moon">🌙</span>
+          <span class="fence">🚧</span>
+          <span id="sheep-sprite" class="sheep">🐑</span>
+        </div>
+        <p class="count-line">Sheep counted: <strong id="sheep-count">0</strong></p>
+        <p id="sheep-msg" class="sheep-msg">The flock is assembling. Press the button.</p>
+        <div class="row">
+          <button id="sheep-btn" class="btn btn-big" type="button">Count a sheep 🐑</button>
+          <button id="sheep-reset" class="btn" type="button">Release the flock</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Notes -->
+    <section id="win-notes" class="win" role="dialog" aria-modal="false" aria-labelledby="win-notes-t" hidden data-x="220" data-y="150">
+      <div class="titlebar">
+        <button class="wmove" type="button" aria-label="Move 4am Thoughts window with arrow keys"><span aria-hidden="true">⠿</span></button>
+        <h2 id="win-notes-t" class="wtitle"><span aria-hidden="true">📝</span> 4am Thoughts.txt</h2>
+        <button class="wclose" type="button" aria-label="Close 4am Thoughts">✕</button>
+      </div>
+      <div class="wbody">
+        <label for="notes" class="notes-label">Write down whatever's keeping you up. It stays on this device.</label>
+        <textarea id="notes" rows="9" spellcheck="true" aria-describedby="notes-status"></textarea>
+        <div class="row between">
+          <p id="notes-status" class="small">Saved locally <span aria-hidden="true">💾</span> nothing leaves this device</p>
+          <div class="row">
+            <button id="notes-dl" class="btn" type="button">Save as .txt</button>
+            <button id="notes-clear" class="btn" type="button">Clear</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section id="win-about" class="win" role="dialog" aria-modal="false" aria-labelledby="win-about-t" hidden data-x="300" data-y="60">
+      <div class="titlebar">
+        <button class="wmove" type="button" aria-label="Move Read Me window with arrow keys"><span aria-hidden="true">⠿</span></button>
+        <h2 id="win-about-t" class="wtitle"><span aria-hidden="true">💾</span> Read Me.txt</h2>
+        <button class="wclose" type="button" aria-label="Close Read Me">✕</button>
+      </div>
+      <div class="wbody prose">
+        <p><strong>Insomnia OS 4.0 AM Edition</strong>, built for Hasan, who texted "I can't sleep… make me something interesting".</p>
+        <ul>
+          <li><span aria-hidden="true">🌧️</span> <strong>Soundscape.exe</strong>: four live-synthesized sounds with their own volume.</li>
+          <li><span aria-hidden="true">🐑</span> <strong>Sheep.exe</strong>: the oldest sleep algorithm, now with sound.</li>
+          <li><span aria-hidden="true">📝</span> <strong>4am Thoughts.txt</strong>: local-first. Your words live in this browser, nowhere else.</li>
+          <li><span aria-hidden="true">✨</span> <strong>Starfield.scr</strong>: press any key to wake.</li>
+        </ul>
+        <h3>Keyboard</h3>
+        <ul>
+          <li>Arrow keys move between desktop icons, Enter opens.</li>
+          <li>Escape closes the window you're in and returns you to its icon.</li>
+          <li>The grip button ⠿ on a title bar moves the window with arrow keys (Shift for bigger steps).</li>
+          <li>The taskbar lists open windows; the speaker button mutes everything.</li>
+        </ul>
+        <p>Respects reduced motion, works with screen readers, and never makes a sound before you ask.</p>
+      </div>
+    </section>
+
+    <!-- Shut down -->
+    <section id="win-shutdown" class="win win-small" role="dialog" aria-modal="false" aria-labelledby="win-shutdown-t" aria-describedby="sd-q" hidden data-x="360" data-y="140">
+      <div class="titlebar">
+        <button class="wmove" type="button" aria-label="Move Shut Down window with arrow keys"><span aria-hidden="true">⠿</span></button>
+        <h2 id="win-shutdown-t" class="wtitle"><span aria-hidden="true">🛌</span> Shut Down Insomnia OS</h2>
+        <button class="wclose" type="button" aria-label="Cancel shut down">✕</button>
+      </div>
+      <div class="wbody">
+        <p id="sd-q"><span aria-hidden="true">🌙</span> Ready to try sleeping again?</p>
+        <label class="check"><input id="sd-keep" type="checkbox" checked> Keep the soundscape playing while I sleep</label>
+        <div class="row">
+          <button id="sd-yes" class="btn btn-big" type="button">Shut down</button>
+          <button class="btn sd-no" type="button">Not yet</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Taskbar -->
+  <footer class="foot">
+  <p class="credit">Made by Tab for Hasan at 4 AM <span aria-hidden="true">🌙</span></p>
+  <div class="taskbar">
+    <span class="start" aria-hidden="true">🌙 Insomnia</span>
+    <nav class="tasks" aria-label="Open windows"><ul id="task-list"></ul></nav>
+    <div class="tray">
+      <button id="mute" class="tray-btn" type="button" aria-pressed="false" aria-label="Mute all sound"><span aria-hidden="true">🔊</span></button>
+      <span class="clock"><span class="sr-only">Time: </span><span id="clock"></span></span>
+    </div>
+  </div>
+  </footer>
+</div>
+
+<!-- Starfield -->
+<div id="stars" class="stars" role="dialog" aria-modal="true" aria-label="Starfield screensaver. Press any key or click to exit." tabindex="-1" hidden>
+  <canvas id="stars-canvas" aria-hidden="true"></canvas>
+  <p class="stars-hint">✨ press any key or tap to wake ✨</p>
+</div>
+
+<!-- Goodnight -->
+<section id="night" class="night" aria-labelledby="night-t" tabindex="-1" hidden>
+  <div>
+    <h2 id="night-t">Goodnight, Hasan <span aria-hidden="true">🌙</span></h2>
+    <p>It's now safe to turn off your brain.</p>
+    <p id="night-sound" class="small"></p>
+    <button id="reboot" class="btn" type="button">Restart Insomnia OS</button>
+    <p class="credit">Made by Tab for Hasan at 4 AM</p>
+  </div>
+</section>
+
+<script src="script.js"></script>
+</body>
+</html>
