@@ -18,18 +18,26 @@ function announce(msg) {
 
 /* ================= Audio engine (all synthesized, nothing before a gesture) ================= */
 const A = {
-  ctx: null, master: null, sfx: null, amb: null, ch: {}, levels: {rain:0, fan:0, whir:0, crick:0},
+  ctx: null, master: null, vol: null, sfx: null, amb: null, ch: {}, levels: {rain:0, fan:0, whir:0, crick:0},
   muted: store.get("muted", false), clicks: true,
+  volume: Math.min(150, Math.max(0, +store.get("volume", 100) || 0)), // master volume, 0–150 %
+  AMB: 1.55, // ambience bus boost (was 1): about +3.8 dB, a bit louder, not blasting
+  SFX: 0.72, // chime bus (was 0.5): about +3.2 dB
+  volGain(pct) { return Math.pow(pct/100, 1.5); }, // perceptual curve; 150% ≈ +5 dB
   init() {
     if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     const c = this.ctx = new AC();
+    // sources -> amb / sfx -> master (mute) -> vol (master volume) -> limiter -> ceiling -> speakers
     this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : 1;
-    const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
-    this.master.connect(comp).connect(c.destination);
-    this.sfx = c.createGain(); this.sfx.gain.value = 0.5; this.sfx.connect(this.master);
-    this.amb = c.createGain(); this.amb.gain.value = 1; this.amb.connect(this.master);
+    this.vol = c.createGain(); this.vol.gain.value = this.volGain(this.volume);
+    const lim = c.createDynamicsCompressor(); // brickwall-style limiter so nothing ever clips
+    lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.12;
+    const ceil = c.createGain(); ceil.gain.value = 0.84; // -1.5 dB headroom after the limiter
+    this.master.connect(this.vol).connect(lim).connect(ceil).connect(c.destination);
+    this.sfx = c.createGain(); this.sfx.gain.value = this.SFX; this.sfx.connect(this.master);
+    this.amb = c.createGain(); this.amb.gain.value = this.AMB; this.amb.connect(this.master);
     this.white = this.noiseBuffer("white"); this.brown = this.noiseBuffer("brown"); this.pink = this.noiseBuffer("pink");
     this.buildRain(); this.buildFan(); this.buildWhir(); this.buildCrickets();
     this.scheduler = setInterval(() => this.tick(), 90);
@@ -123,7 +131,8 @@ const A = {
   },
   ambActive() { return Object.values(this.levels).some(v => v > 0); },
   fadeAmbience(sec) { if (this.amb) this.amb.gain.setTargetAtTime(0.0001, this.ctx.currentTime, sec/4); },
-  restoreAmbience() { if (this.amb) this.amb.gain.setTargetAtTime(1, this.ctx.currentTime, 0.2); },
+  restoreAmbience() { if (this.amb) this.amb.gain.setTargetAtTime(this.AMB, this.ctx.currentTime, 0.2); },
+  setVolume(pct) { this.volume = pct; store.set("volume", pct); if (this.vol) this.vol.gain.setTargetAtTime(this.volGain(pct), this.ctx.currentTime, 0.05); },
   setMuted(m) { this.muted = m; store.set("muted", m); if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 1, this.ctx.currentTime, 0.03); },
   tone(f, t, dur, {type="sine", vol=0.25, glide=null, attack=0.005} = {}) {
     const c = this.ctx, o = c.createOscillator(), g = c.createGain();
@@ -278,7 +287,7 @@ window.addEventListener("resize", () => { if (!small()) $$(".win:not([hidden])")
 
 /* ================= Soundscape ================= */
 const savedMix = store.get("mix", {});
-$$(".chan input").forEach(inp => {
+$$(".chan input[data-ch]").forEach(inp => {
   const ch = inp.dataset.ch, out = document.getElementById("o-" + ch);
   const name = inp.labels[0].textContent.trim();
   const update = (save = true) => {
@@ -290,6 +299,14 @@ $$(".chan input").forEach(inp => {
   inp.addEventListener("input", () => { A.init(); update(); });
   update(false);
 });
+/* Master volume (0–150 %, remembered) */
+const masterInp = $("#v-master"), masterOut = $("#o-master");
+const renderMaster = () => {
+  const v = +masterInp.value; masterOut.textContent = v + "%";
+  masterInp.setAttribute("aria-valuetext", v === 0 ? "silent" : v + " percent");
+};
+masterInp.value = A.volume; renderMaster();
+masterInp.addEventListener("input", () => { A.init(); A.setVolume(+masterInp.value); renderMaster(); });
 const presets = { storm:{rain:70, fan:25, whir:45, crick:0}, summer:{rain:0, fan:30, whir:0, crick:55}, lab:{rain:20, fan:40, whir:60, crick:10}, off:{rain:0, fan:0, whir:0, crick:0} };
 $$("[data-preset]").forEach(b => b.addEventListener("click", () => {
   A.init(); A.play("click");
@@ -303,10 +320,13 @@ const muteBtn = $("#mute");
 function renderMute() { muteBtn.setAttribute("aria-pressed", String(A.muted)); muteBtn.firstElementChild.textContent = A.muted ? "🔇" : "🔊"; muteBtn.title = A.muted ? "Sound is muted" : "Mute all sound"; }
 renderMute();
 muteBtn.addEventListener("click", () => { A.setMuted(!A.muted); renderMute(); if (!A.muted) A.play("click"); announce(A.muted ? "All sound muted." : "Sound on."); });
+document.addEventListener("mousedown", e => {
+  if (performance.now() < swallowClicksUntil && !e.target.closest("#stars")) e.preventDefault();
+}, true);
 document.addEventListener("click", e => {
   const b = e.target.closest("button");
   if (!b || b === muteBtn) return;
-  if (b.matches(".wclose, [data-preset], #sheep-btn, #boot-btn, #sd-yes, .icon, .tasks button")) return;
+  if (b.matches(".wclose, [data-preset], #sheep-btn, #boot-btn, #sd-yes, .icon, .tasks button, #stars")) return;
   A.play("click");
 });
 
@@ -384,16 +404,32 @@ function startStars(opener) {
   };
   ctx.fillStyle = "#000"; ctx.fillRect(0,0,cv.width,cv.height); draw();
   stars._size = size;
-  announce("Starfield screensaver running. Press any key or click to wake.");
-  setTimeout(() => { stars.addEventListener("keydown", stopStars, {once:true}); stars.addEventListener("pointerdown", stopStars, {once:true}); }, 250);
+  announce("Starfield screensaver running. Tap, double tap or press any key to wake.");
+  starsArmed = false; setTimeout(() => { starsArmed = true; }, 250);
 }
+/* The whole overlay is one native <button>: a sighted tap, a VoiceOver/TalkBack double tap (a click on the
+   focused button), a mouse click, pointerup or any key all close it. */
+let starsArmed = false, swallowClicksUntil = 0;
 function stopStars(e) {
+  if (stars.hidden || !starsArmed) return;
   if (e) e.preventDefault();
+  starsArmed = false;
+  // the touch/key that closed it must not also press whatever is underneath (ghost click / Space keyup)
+  swallowClicksUntil = performance.now() + 450;
   cancelAnimationFrame(starRAF); window.removeEventListener("resize", stars._size);
-  stars.removeEventListener("keydown", stopStars); stars.removeEventListener("pointerdown", stopStars);
-  stars.hidden = true; A.play("close"); announce("Welcome back.");
-  (starReturn || icons[0]).focus();
+  stars.hidden = true; A.play("close"); announce("Screensaver closed.");
+  const back = starReturn || $('[data-action="stars"]') || icons[0];
+  back.focus(); setTimeout(() => { if (document.activeElement !== back && stars.hidden) back.focus(); }, 60);
 }
+// Stop the touch's compatibility mousedown from landing on whatever is under the finger once the overlay hides
+// (that would steal focus from the Starfield icon on iOS/Android). The click itself still fires for VoiceOver.
+stars.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse") e.preventDefault(); });
+stars.addEventListener("click", stopStars);
+stars.addEventListener("pointerup", stopStars);
+stars.addEventListener("keydown", stopStars);
+document.addEventListener("click", e => {
+  if (performance.now() < swallowClicksUntil && !e.target.closest("#stars")) { e.preventDefault(); e.stopPropagation(); }
+}, true);
 
 /* ================= Shut down ================= */
 const night = $("#night"), nightSound = $("#night-sound");
