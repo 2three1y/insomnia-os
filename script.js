@@ -4,6 +4,8 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Calm mode (photosensitivity notice at the top, on by default) or the system Reduce Motion setting: nothing moves.
+const calm = () => reduceMotion() || !!(window.calmMode && window.calmMode());
 const store = {
   get(k, d) { try { const v = localStorage.getItem("insomnia-os:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem("insomnia-os:" + k, JSON.stringify(v)); } catch {} }
@@ -58,7 +60,7 @@ const A = {
   SFX: 1.02, // chime bus (v1: 0.5, v2: 0.72): another +3 dB
   volGain(pct) { return Math.pow(pct/100, 1.5); }, // perceptual curve; 150% ≈ +5 dB
   init() {
-    if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume(); return; }
+    if (this.ctx) { this.wake(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     const c = this.ctx = new AC();
@@ -78,6 +80,22 @@ const A = {
     this.white = this.noiseBuffer("white"); this.brown = this.noiseBuffer("brown"); this.pink = this.noiseBuffer("pink");
     this.buildRain(); this.buildFan(); this.buildWhir(); this.buildCrickets();
     this.scheduler = setInterval(() => this.tick(), 90);
+    this.armSleep();
+  },
+  // Battery: with no soundscape playing, the sound engine and its scheduler sleep after 20 s of quiet and whenever the tab is hidden.
+  // A soundscape you started keeps playing in the background on purpose (it's for falling asleep).
+  wake() {
+    if (!this.ctx) return;
+    if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
+    if (!this.scheduler) this.scheduler = setInterval(() => this.tick(), 90);
+    this.lastUse = Date.now(); this.armSleep();
+  },
+  armSleep() { clearTimeout(this.sleepT); this.sleepT = setTimeout(() => this.sleepIfIdle(), 20000); },
+  sleepIfIdle(now) {
+    if (!this.ctx) return;
+    if (this.ambActive() || (!now && Date.now() - (this.lastUse || 0) < 19000)) { this.armSleep(); return; }
+    clearInterval(this.scheduler); this.scheduler = null;
+    if (this.ctx.state === "running") this.ctx.suspend().catch(() => {});
   },
   noiseBuffer(kind) {
     const c = this.ctx, len = c.sampleRate * 3, buf = c.createBuffer(2, len, c.sampleRate);
@@ -162,6 +180,7 @@ const A = {
   },
   setLevel(name, pct) {
     this.levels[name] = pct;
+    if (pct > 0) this.wake();
     if (!this.ch[name]) return;
     const gain = Math.pow(pct/100, 2) * (name === "crick" ? 0.8 : 1);
     this.ch[name].gain.setTargetAtTime(gain, this.ctx.currentTime, 0.12);
@@ -186,6 +205,7 @@ const A = {
   },
   play(name) {
     if (!this.ctx || this.muted) return;
+    this.wake();
     if (!this.clicks && ["click","open","close","tick"].includes(name)) return;
     this.echoBus();
     const t = this.ctx.currentTime + 0.01;
@@ -273,7 +293,7 @@ function openWin(id, opener) {
   if (w.hidden) {
     w.hidden = false;
     if (!small()) place(w, +w.dataset.x, +w.dataset.y);
-    if (!reduceMotion()) { w.classList.remove("opening"); void w.offsetWidth; w.classList.add("opening"); }
+    if (!calm()) { w.classList.remove("opening"); void w.offsetWidth; w.classList.add("opening"); }
     const li = document.createElement("li"), b = document.createElement("button");
     b.type = "button"; b.dataset.win = id; b.textContent = winTitle(w);
     b.addEventListener("click", () => { A.play("click"); focusWin(w); });
@@ -411,7 +431,7 @@ $("#sheep-btn").addEventListener("click", () => {
   while (sheepLog.children.length > LOG_MAX) sheepLog.lastElementChild.remove();
   sheepMsg.hidden = true;
   sheepAnnounce(line + (milestone ? " " + milestone : ""));
-  if (!reduceMotion()) { sprite.classList.remove("jump"); void sprite.offsetWidth; sprite.classList.add("jump"); }
+  if (!calm()) { sprite.classList.remove("jump"); void sprite.offsetWidth; sprite.classList.add("jump"); }
 });
 $("#sheep-reset").addEventListener("click", () => {
   sheep = 0; store.set("sheep", 0); renderSheep(); sheepLog.textContent = ""; sheepMsg.hidden = false;
@@ -454,7 +474,7 @@ function startStars(opener) {
   const size = () => { cv.width = innerWidth*dpr; cv.height = innerHeight*dpr; };
   size(); window.addEventListener("resize", size);
   const N = 420, pts = Array.from({length:N}, () => ({x:(Math.random()*2-1), y:(Math.random()*2-1), z:Math.random()}));
-  const still = reduceMotion();
+  const still = calm();
   const draw = () => {
     const w = cv.width, h = cv.height, cx = w/2, cy = h/2;
     ctx.fillStyle = still ? "#000" : "rgba(0,0,0,0.35)"; ctx.fillRect(0,0,w,h);
@@ -507,7 +527,7 @@ $("#sd-yes").addEventListener("click", () => {
   night.hidden = false; void night.offsetWidth; night.classList.add("show");
   if (keep) { nightSound.innerHTML = ""; const b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.textContent = "🔇 Stop the soundscape"; b.addEventListener("click", () => { A.fadeAmbience(2); nightSound.textContent = "Soundscape fading out. Sweet dreams."; announce("Soundscape fading out."); $("#reboot").focus(); }); nightSound.append("The soundscape keeps playing softly. ", b); }
   else nightSound.textContent = "";
-  setTimeout(() => { $("#os").hidden = true; }, reduceMotion() ? 0 : 1200);
+  setTimeout(() => { $("#os").hidden = true; }, calm() ? 0 : 1200);
   night.focus();
   announce(named("Goodnight, {name}.", "Goodnight.") + " It's now safe to turn off your brain.");
 });
@@ -520,4 +540,6 @@ $("#reboot").addEventListener("click", () => {
 const clock = $("#clock");
 const tickClock = () => { clock.textContent = new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}); };
 tickClock(); setInterval(tickClock, 10000);
+window.__psAudio = { state: () => A.ctx && A.ctx.state, scheduler: () => !!A.scheduler, idleNow: () => { A.lastUse = 0; A.sleepIfIdle(); } };
+document.addEventListener("visibilitychange", () => { if (document.hidden) A.sleepIfIdle(true); else if (A.ctx && A.ambActive()) A.wake(); });
 })();
